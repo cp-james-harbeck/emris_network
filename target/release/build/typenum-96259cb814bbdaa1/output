@@ -1,0 +1,3 @@
+cargo:rerun-if-changed=build/main.rs
+cargo:rustc-env=TYPENUM_BUILD_CONSTS=/ic-projects/emris_network/target/release/build/typenum-96259cb814bbdaa1/out/consts.rs
+cargo:rustc-env=TYPENUM_BUILD_OP=/ic-projects/emris_network/target/release/build/typenum-96259cb814bbdaa1/out/op.rs

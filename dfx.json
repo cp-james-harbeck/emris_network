@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "canisters": {
+    "emris_network_backend": {
+      "type": "custom",
+      "candid": "src/my_project/my_project.did",
+      "wasm": "target/wasm32-unknown-unknown/release/emris_network_backend.wasm",
+      "build": "sh build.sh emris_network_backend emris_network"
+    },
+    "emris_network_frontend": {
+      "dependencies": [
+        "emris_network_backend"
+      ],
+      "frontend": {
+        "entrypoint": "src/emris_network_frontend/src/index.html"
+      },
+      "source": [
+        "src/emris_network_frontend/assets",
+        "dist/emris_network_frontend/"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env"
+}

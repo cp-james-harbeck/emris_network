@@ -1,0 +1,24 @@
+[package]
+name = "dfinity-distributed-ml"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+ic-cdk = "0.7.4"
+ic-cdk-macros = "0.6.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_cbor = "0.11"
+wgpu = "0.16.0"
+futures = "0.3"
+tokio = "1.0"
+bytemuck = "1.7"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+

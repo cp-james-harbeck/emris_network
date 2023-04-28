@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Decentralized AI Compute Network</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Decentralized AI Compute Network</h1>
+      <div class="dashboard">
+        <h2>User Registration</h2>
+        <input type="text" id="userId" placeholder="User ID" />
+        <input type="number" id="initialResources" placeholder="Initial Resources" />
+        <input type="number" id="initialRewards" placeholder="Initial Rewards" />
+        <input type="number" id="rateLimitTokens" placeholder="Rate Limit Tokens" />
+        <button onclick="registerUser()">Register User</button>
+
+        <h2>Model Registration</h2>
+        <input type="text" id="modelId" placeholder="Model ID" />
+        <input type="number" id="minResources" placeholder="Minimum Resources" />
+        <button onclick="registerModel()">Register Model</button>
+
+        <h2>Model Activation</h2>
+        <input type="text" id="activateModelId" placeholder="Model ID" />
+        <button onclick="activateModel()">Activate Model</button>
+
+        <h2>Generate Completion</h2>
+        <input type="text" id="prompt" placeholder="Prompt" />
+        <button onclick="generateCompletion()">Generate</button>
+
+        <h2>Output</h2>
+        <textarea id="output" readonly></textarea>
+      </div>
+    </div>
+    <script src="index.js"></script>
+  </body>
+</html>
