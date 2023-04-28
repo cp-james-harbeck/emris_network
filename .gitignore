@@ -27,3 +27,6 @@ target/
 
 # If you're using rustup to manage toolchains, this file contains the default toolchain
 rust-toolchain
+
+# Environment Variables
+.env
