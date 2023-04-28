@@ -7,6 +7,16 @@ import {
 import {
   idlFactory as task_manager_idl
 } from './task_manager.did.js';
+// Import the WASM module
+import * as wasm from './pkg';
+
+// Instantiate the WebGPUCompute object
+const webGPUCompute = await wasm.WebGPUCompute.new();
+
+// Use the run_gpu_computation() method
+const input_data = [1, 2, 3, 4];
+const result = await webGPUCompute.run_gpu_computation(input_data);
+console.log(result);
 
 // Set up the agent and actor for the smart contract.
 // The agent is responsible for communicating with the Internet Computer.
@@ -19,108 +29,116 @@ const taskManager = Actor.createActor(task_manager_idl, {
   canisterId: 'your-canister-id'
 });
 
-// Define a function to register a new user with the task manager canister.
-async function registerUser() {
+// Define a function to update user resources.
+async function updateUserResources() {
   // Get input values from the HTML form.
-  const userId = document.getElementById('userId').value;
-  const initialResources = parseInt(document.getElementById('initialResources').value);
-  const initialRewards = parseInt(document.getElementById('initialRewards').value);
-  const rateLimitTokens = parseInt(document.getElementById('rateLimitTokens').value);
+  const userId = document.getElementById('updateUserId').value;
+  const newResources = parseInt(document.getElementById('newResources').value);
 
   // Input validation.
-  if (!userId || isNaN(initialResources) || isNaN(initialRewards) || isNaN(rateLimitTokens)) {
-    output('Invalid input for user registration.');
+  if (!userId || isNaN(newResources)) {
+    output('Invalid input for updating user resources.');
     return;
   }
 
-  // Register the user.
+  // Update user resources.
   try {
-    const user = {
-      id: userId,
-      resources: initialResources,
-      rewards: initialRewards,
-      rate_limit_tokens: rateLimitTokens
-    };
-    await taskManager.register_user(user);
-    output(`User ${userId} registered successfully.`);
+    await taskManager.update_user_resources({ user_id: userId, new_resources: newResources });
+    output(`User ${userId} resources updated successfully.`);
   } catch (error) {
-    output('Error registering user:', error);
+    output('Error updating user resources:', error);
   }
 }
 
-// Define a function to register a new model with the task manager canister.
-async function registerModel() {
+// Define a function to distribute model chunks.
+async function distributeModelChunks() {
   // Get input values from the HTML form.
-  const modelId = document.getElementById('modelId').value;
-  const minResources = parseInt(document.getElementById('minResources').value);
+  const modelId = document.getElementById('distributeModelId').value;
+  const chunkData = document.getElementById('chunkData').value;
 
   // Input validation.
-  if (!modelId || isNaN(minResources)) {
-    output('Invalid input for model registration.');
+  if (!modelId || !chunkData) {
+    output('Invalid input for distributing model chunks.');
     return;
   }
 
-  // Register the model.
+  // Distribute model chunks.
   try {
-    const model = {
-      id: modelId,
-      min_resources: minResources,
-      active: false
-    };
-    await taskManager.register_model(model);
-    output(`Model ${modelId} registered successfully.`);
+    await taskManager.distribute_model_chunks({ model_id: modelId, chunk_data: chunkData });
+    output(`Model ${modelId} chunks distributed successfully.`);
   } catch (error) {
-    output('Error registering model:', error);
+    output('Error distributing model chunks:', error);
   }
 }
 
-// Define a function to activate a model.
-async function activateModel() {
+// Define a function to run a task and submit the result to the canister.
+async function runTaskAndSubmitResult() {
   // Get input values from the HTML form.
-  const modelId = document.getElementById('activateModelId').value;
+  const taskId = document.getElementById('taskId').value;
+  const inputData = document.getElementById('inputData').value;
 
   // Input validation.
-  if (!modelId) {
-    output('Invalid input for model activation.');
+  if (!taskId || !inputData) {
+    output('Invalid input for running task.');
     return;
   }
 
-  // Activate the model.
+  // Run the task using WebGPU.
+  const result = await webGPUCompute.run_gpu_computation(inputData);
+
+  // Submit the result to the canister.
   try {
-    await taskManager.activate_model(modelId);
-    output(`Model ${modelId} activated successfully.`);
+    await taskManager.submit_task_result({ task_id: taskId, result });
+    output(`Task ${taskId} result submitted successfully.`);
   } catch (error) {
-    output('Error activating model:', error);
-  }
-
-  // Define a function to generate a completion based on the given prompt.
-  async function generateCompletion() {
-    // Get input values from the HTML form.
-    const prompt = document.getElementById('prompt').value;
-
-    // Input validation.
-    if (!prompt) {
-      output('Invalid input for prompt.');
-      return;
-    }
-
-    // Generate the completion.
-    try {
-      const completion = await taskManager.generate_completion(prompt);
-      output('Generated completion:', completion);
-    } catch (error) {
-      output('Error generating completion:', error);
-    }
-  }
-
-  // Define a function to display output in the textarea.
-  function output(...messages) {
-    const outputElement = document.getElementById('output');
-    outputElement.value += messages.join(' ') + '\n';
+    output('Error submitting task result:', error);
   }
 }
-// Implement a mechanism to handle rate limits for users.
-// TODO: Add your implementation here based on the project's rate limit requirements.
 
-// Invoke the main function to execute the program.
+// Define a rate-limiting mechanism for users.
+// This is a simple rate-limiting mechanism that uses a token bucket approach.
+// Each user has a certain number of tokens, and each request consumes one token.
+// Tokens are replenished over time up to a maximum limit.
+const rateLimitTokens = {}; // Store the number of tokens for each user.
+const maxTokensPerUser = 10; // Maximum number of tokens a user can have.
+const tokenReplenishInterval = 60000; // Replenish interval in milliseconds (e.g., 1 minute).
+
+// Replenish tokens for all users periodically.
+setInterval(() => {
+for (const userId in rateLimitTokens) {
+rateLimitTokens[userId] = Math.min(rateLimitTokens[userId] + 1, maxTokensPerUser);
+}
+}, tokenReplenishInterval);
+
+// Check if a user can make a request based on their available tokens.
+function canMakeRequest(userId) {
+if (!rateLimitTokens[userId]) {
+rateLimitTokens[userId] = maxTokensPerUser; // Initialize tokens for new users.
+}
+if (rateLimitTokens[userId] > 0) {
+rateLimitTokens[userId]--; // Consume one token.
+return true;
+}
+return false; // User has no tokens left.
+}
+
+// Define a function to display output in the textarea.
+function output(...messages) {
+const outputElement = document.getElementById('output');
+outputElement.value += messages.join(' ') + '\n';
+}
+
+// Implement the main function to execute the program.
 // TODO: Add any additional initialization code here if needed.
+// For example, you can add event listeners for buttons to invoke the functions defined above.
+
+// Example event listener for the "Register User" button:
+document.getElementById('registerUserButton').addEventListener('click', () => {
+if (canMakeRequest('userId')) {
+registerUser();
+} else {
+output('Rate limit exceeded. Please wait before making another request.');
+}
+});
+
+// TODO: Add similar event listeners for other buttons and functions.

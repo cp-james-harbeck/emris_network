@@ -4,6 +4,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
+use wasm_bindgen::prelude::*;
 
 // Compute shader code (WGSL)
 const COMPUTE_SHADER: &str = r#"
@@ -28,6 +29,7 @@ pub struct WebGPUCompute {
     compute_pipeline: Arc<wgpu::ComputePipeline>,
 }
 
+#[wasm_bindgen]
 impl WebGPUCompute {
     // Initialize the WebGPUCompute struct
     pub async fn new() -> Self {
