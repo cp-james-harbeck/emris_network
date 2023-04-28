@@ -19,7 +19,7 @@ dist/
 
 # Rust-specific entries
 # Compiled files
-/target/
+target/
 **/*.rs.bk
 
 # Cargo lock file (uncomment if you're building a library)
