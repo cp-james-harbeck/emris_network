@@ -1,4 +1,5 @@
-use ic_cdk::export::candid::{CandidType, Deserialize, Serialize};
+use ic_cdk::export::candid::{CandidType};
+use serde::{Deserialize, Serialize};
 
 // Define a struct representing a chunk of a larger data model.
 #[derive(Clone, Deserialize, Serialize, CandidType)]

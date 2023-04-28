@@ -1,7 +1,9 @@
-use ic_cdk::export::candid::{CandidType, Deserialize, Serialize};
+use ic_cdk::export::candid::{CandidType};
+use serde::{Deserialize, Serialize};
 
 // Define a struct representing a user in the system.
 #[derive(Clone, Deserialize, Serialize, CandidType)]
+
 pub struct User {
     pub id: String,     // User's unique identifier
     pub resources: u64, // Number of resources owned by the user

@@ -336,6 +336,7 @@ name = "dfinity-distributed-ml"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "candid",
  "futures",
  "ic-cdk",
  "ic-cdk-macros",

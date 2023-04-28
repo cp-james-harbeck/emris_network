@@ -3,7 +3,7 @@
   "canisters": {
     "emris_network_backend": {
       "type": "custom",
-      "candid": "src/my_project/my_project.did",
+      "candid": "src/emris_network/emris_network_backend.did",
       "wasm": "target/wasm32-unknown-unknown/release/emris_network_backend.wasm",
       "build": "sh build.sh emris_network_backend emris_network"
     },

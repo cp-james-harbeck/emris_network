@@ -1,4 +1,5 @@
-use ic_cdk::export::candid::{CandidType, Deserialize, Serialize};
+use ic_cdk::export::candid::{CandidType};
+use serde::{Deserialize, Serialize};
 
 // Define a struct representing a training task for a machine learning model.
 #[derive(Clone, Deserialize, Serialize, CandidType)]

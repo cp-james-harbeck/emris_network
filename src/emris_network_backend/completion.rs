@@ -1,4 +1,6 @@
-use ic_cdk::export::candid::{CandidType, Deserialize, Serialize};
+use ic_cdk::export::candid::{CandidType};
+use serde::{Deserialize, Serialize};
+
 
 // Define a struct representing a text completion.
 #[derive(Clone, Deserialize, Serialize, CandidType)]
