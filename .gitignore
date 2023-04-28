@@ -16,3 +16,14 @@ src/declarations/
 # frontend code
 node_modules/
 dist/
+
+# Rust-specific entries
+# Compiled files
+/target/
+**/*.rs.bk
+
+# Cargo lock file (uncomment if you're building a library)
+# Cargo.lock
+
+# If you're using rustup to manage toolchains, this file contains the default toolchain
+rust-toolchain
