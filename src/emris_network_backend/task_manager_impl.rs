@@ -3,9 +3,7 @@ use crate::model_chunk::ModelChunk;
 use crate::task_manager::TaskManagerInterface;
 use crate::training_task::TrainingTask;
 use crate::user::User;
-use crate::webgpu_compute::WebGPUCompute;
 use ic_cdk::export::candid::CandidType;
-use ic_cdk::spawn;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -14,7 +12,6 @@ pub struct TaskManagerImpl {
     model_chunks: HashMap<String, ModelChunk>,
     models: HashMap<String, Model>,
     training_tasks: HashMap<String, TrainingTask>,
-    webgpu_compute: Option<WebGPUCompute>,
 }
 
 #[derive(Clone, Deserialize, Serialize, CandidType)]
@@ -31,25 +28,19 @@ impl Default for TaskManagerImpl {
             model_chunks: HashMap::new(),
             models: HashMap::new(),
             training_tasks: HashMap::new(),
-            webgpu_compute: None,
         }
     }
 }
 
 impl TaskManagerInterface for TaskManagerImpl {
-    fn init(&mut self) {
-        let webgpu_compute_future = async { WebGPUCompute::new().await };
-        spawn(async move {
-            let webgpu_compute = webgpu_compute_future.await;
-        });
-    }
+    fn init(&mut self) {}
 
     fn register_user(&mut self, user: User) -> Result<String, String> {
         if self.users.contains_key(&user.id) {
             return Err("User already exists.".to_string());
         }
         let user_id = user.id.clone();
-        self.users.insert(user.id, user);
+        self.users.insert(user.id.clone(), user);
         Ok(user_id)
     }
 
@@ -75,26 +66,18 @@ impl TaskManagerInterface for TaskManagerImpl {
         Ok(())
     }
 
-    fn submit_computed_chunk(&mut self, chunk: ModelChunk) -> Result<(), String> {
+    fn submit_computed_chunk(
+        &mut self,
+        chunk: ModelChunk,
+        computed_results: Vec<u32>, // Accept computed results as an argument
+    ) -> Result<(), String> {
         if let Some(existing_chunk) = self.model_chunks.get_mut(&chunk.id) {
             existing_chunk.data = chunk.data;
         } else {
             return Err("Model chunk not found.".to_string());
         }
 
-        if let Some(webgpu_compute) = &self.webgpu_compute {
-            let input_data = chunk.data.iter().map(|&byte| byte as u32).collect();
-            let gpu_computation = webgpu_compute.run_gpu_computation(input_data);
-            spawn(async move {
-                match gpu_computation.await {
-                    Ok(output_data) => {
-                        println!("GPU computation result: {:?}", output_data);
-                    }
-                    Err(err) => {}
-                }
-            });
-        }
-
+        // Use the computed results directly instead of running the GPU computation
         let reward = self.calculate_rewards(&chunk.user_id, 1);
         println!("User {} earned {} tokens.", chunk.user_id, reward);
 
@@ -124,7 +107,8 @@ impl TaskManagerInterface for TaskManagerImpl {
             return Err("Model already exists.".to_string());
         }
         let model_id = model.id.clone();
-        self.models.insert(model.id, model);
+        self.models.insert(model_id.clone(), model);
+
         Ok(model_id)
     }
 
@@ -184,7 +168,7 @@ impl TaskManagerInterface for TaskManagerImpl {
             return Err("Training task already exists.".to_string());
         }
         let task_id = task.id.clone();
-        self.training_tasks.insert(task.id, task);
+        self.training_tasks.insert(task_id.clone(), task);
         Ok(task_id)
     }
 

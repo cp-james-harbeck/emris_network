@@ -340,6 +340,7 @@ dependencies = [
  "futures",
  "ic-cdk",
  "ic-cdk-macros",
+ "once_cell",
  "serde",
  "serde_cbor",
  "tokio",

@@ -1,7 +1,8 @@
+use futures::channel::oneshot;
+use std::convert::TryInto;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::convert::TryInto;
 use wgpu::util::DeviceExt;
 
 // Compute shader code (WGSL)
@@ -21,8 +22,8 @@ const COMPUTE_SHADER: &str = r#"
 "#;
 
 pub struct WebGPUCompute {
-    device: wgpu::Device,
-    queue: wgpu::Queue,
+    device: Arc<wgpu::Device>,
+    queue: Arc<wgpu::Queue>,
     bind_group_layout: Arc<wgpu::BindGroupLayout>,
     compute_pipeline: Arc<wgpu::ComputePipeline>,
 }
@@ -46,6 +47,9 @@ impl WebGPUCompute {
             .request_device(&wgpu::DeviceDescriptor::default(), None)
             .await
             .unwrap();
+
+        let device = Arc::new(device);
+        let queue = Arc::new(queue);
 
         // Create a shader module with the compute shader code
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -95,88 +99,92 @@ impl WebGPUCompute {
     }
 
     // Run the WebGPU computation
-    pub fn run_gpu_computation(
-        &self,
-        input_data: Vec<u32>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<u32>, String>> + '_>> {
+    pub async fn run_gpu_computation(&self, input_data: Vec<u32>) -> Result<Vec<u32>, String> {
         let device = &self.device;
         let queue = &self.queue;
         let bind_group_layout = Arc::clone(&self.bind_group_layout);
         let compute_pipeline = Arc::clone(&self.compute_pipeline);
-        Box::pin(async move {
-            // Create a buffer with input data
-            let input_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Input Buffer"),
-                contents: bytemuck::cast_slice(&input_data),
-                usage: wgpu::BufferUsages::STORAGE,
+
+        // Create a buffer with input data
+        let input_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Input Buffer"),
+            contents: bytemuck::cast_slice(&input_data),
+            usage: wgpu::BufferUsages::STORAGE,
+        });
+        // Create a buffer to store the output data
+        let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Output Buffer"),
+            size: (input_data.len() * std::mem::size_of::<u32>()) as wgpu::BufferAddress,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        // Create a bind group
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Bind Group"),
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                    buffer: &input_buffer,
+                    offset: 0,
+                    size: wgpu::BufferSize::new(
+                        (input_data.len() * std::mem::size_of::<u32>()) as wgpu::BufferAddress,
+                    ),
+                }),
+            }],
+        });
+
+        // Create a command encoder and record the compute pass
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Compute Encoder"),
+        });
+        {
+            let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("Compute Pass"),
             });
-            // Create a buffer to store the output data
-            let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("Output Buffer"),
-                size: (input_data.len() * std::mem::size_of::<u32>()) as wgpu::BufferAddress,
-                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            });
+            compute_pass.set_pipeline(&compute_pipeline);
+            compute_pass.set_bind_group(0, &bind_group, &[]);
+            compute_pass.dispatch_workgroups(input_data.len() as u32, 1, 1);
+        }
 
-            // Create a bind group
-            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("Bind Group"),
-                layout: &bind_group_layout,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                        buffer: &input_buffer,
-                        offset: 0,
-                        size: wgpu::BufferSize::new(
-                            (input_data.len() * std::mem::size_of::<u32>()) as wgpu::BufferAddress,
-                        ),
-                    }),
-                }],
-            });
+        // Copy the output data from the GPU to a buffer that can be read by the CPU
+        encoder.copy_buffer_to_buffer(
+            &output_buffer,
+            0,
+            &input_buffer,
+            0,
+            (input_data.len() * std::mem::size_of::<u32>()) as wgpu::BufferAddress,
+        );
 
-            // Create a command encoder and record the compute pass
-            let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Compute Encoder"),
-            });
-            {
-                let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                    label: Some("Compute Pass"),
-                });
-                compute_pass.set_pipeline(&compute_pipeline);
-                compute_pass.set_bind_group(0, &bind_group, &[]);
-                compute_pass.dispatch_workgroups(input_data.len() as u32, 1, 1);
-            }
+        // Submit the command buffer to the queue
+        queue.submit(Some(encoder.finish()));
 
-            // Copy the output data from the GPU to a buffer that can be read by the CPU
-            encoder.copy_buffer_to_buffer(
-                &output_buffer,
-                0,
-                &input_buffer,
-                0,
-                (input_data.len() * std::mem::size_of::<u32>()) as wgpu::BufferAddress,
-            );
+        // Create a channel to communicate the result of the mapping operation
+        let (sender, receiver) = oneshot::channel();
 
-            // Submit the command buffer to the queue
-            queue.submit(Some(encoder.finish()));
+        // Read the output data from the buffer
+        let buffer_slice = output_buffer.slice(..);
+        buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
+            // Send the result over the channel
+            sender.send(result).unwrap();
+        });
+        device.poll(wgpu::Maintain::Wait);
 
-            // Read the output data from the buffer
-            let buffer_slice = output_buffer.slice(..);
-            let buffer_future =
-                buffer_slice.map_async(wgpu::MapMode::Read, |result| match result {
-                    Ok(()) => (),
-                    Err(e) => eprintln!("Failed to map buffer: {:?}", e),
-                });
-            device.poll(wgpu::Maintain::Wait);
-            if let Ok(()) = buffer_future.await {
+        // Await the receiver end of the channel to get the result
+        match receiver.await.unwrap() {
+            Ok(()) => {
                 let data = buffer_slice.get_mapped_range();
                 let result: Vec<u32> = data
                     .chunks_exact(4)
                     .map(|b| u32::from_ne_bytes(b.try_into().unwrap()))
                     .collect();
                 Ok(result)
-            } else {
+            }
+            Err(e) => {
+                eprintln!("Failed to map buffer: {:?}", e);
                 Err("Failed to run compute on the GPU.".to_string())
             }
-        })
+        }
     }
 }

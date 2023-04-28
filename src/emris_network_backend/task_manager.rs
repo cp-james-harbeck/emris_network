@@ -11,7 +11,11 @@ pub trait TaskManagerInterface {
     fn register_user(&mut self, user: User) -> Result<String, String>;
     fn update_user_resources(&mut self, id: &str, resources: u64) -> Result<(), String>;
     fn distribute_model_chunks(&mut self) -> Result<(), String>;
-    fn submit_computed_chunk(&mut self, chunk: ModelChunk) -> Result<(), String>;
+    fn submit_computed_chunk(
+        &mut self,
+        chunk: ModelChunk,
+        computed_results: Vec<u32>, // Add this parameter
+    ) -> Result<(), String>;
     fn get_model_chunks(&self, user_id: &str) -> Result<Vec<ModelChunk>, String>;
     fn get_rewards(&self, user_id: &str) -> Result<u64, String>;
     fn register_model(&mut self, model: Model) -> Result<String, String>;
