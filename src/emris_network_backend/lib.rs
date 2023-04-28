@@ -1,7 +1,4 @@
-use ic_cdk::export::candid::CandidType;
 use ic_cdk_macros::*;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
 mod completion;
@@ -18,7 +15,6 @@ use task_manager::*;
 use task_manager_impl::*;
 use training_task::*;
 use user::*;
-use webgpu_compute::WebGPUCompute;
 
 static TASK_MANAGER: RwLock<Arc<TaskManagerImpl>> =
     RwLock::new(Arc::new(TaskManagerImpl::default()));

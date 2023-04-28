@@ -4,7 +4,7 @@ use crate::task_manager::TaskManagerInterface;
 use crate::training_task::TrainingTask;
 use crate::user::User;
 use crate::webgpu_compute::WebGPUCompute;
-use ic_cdk::export::candid::{CandidType};
+use ic_cdk::export::candid::CandidType;
 use ic_cdk::spawn;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -41,8 +41,6 @@ impl TaskManagerInterface for TaskManagerImpl {
         let webgpu_compute_future = async { WebGPUCompute::new().await };
         spawn(async move {
             let webgpu_compute = webgpu_compute_future.await;
-            // Handle the result of WebGPUCompute initialization here
-            // ...
         });
     }
 
@@ -92,10 +90,7 @@ impl TaskManagerInterface for TaskManagerImpl {
                     Ok(output_data) => {
                         println!("GPU computation result: {:?}", output_data);
                     }
-                    Err(err) => {
-                        // Handle the error here
-                        // ...
-                    }
+                    Err(err) => {}
                 }
             });
         }
