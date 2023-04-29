@@ -7,6 +7,10 @@ use ic_cdk::export::candid::CandidType;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+// use crate::gpt_neo::GptNeoTextGenerator;
+// use rust_bert::gpt2::{Gpt2Config, Gpt2ForGeneration, Gpt2Tokenizer};
+// use rust_bert::pipelines::generation::{GenerateConfig, LanguageGenerator};
+
 pub struct TaskManagerImpl {
     users: HashMap<String, User>,
     model_chunks: HashMap<String, ModelChunk>,
@@ -162,6 +166,32 @@ impl TaskManagerInterface for TaskManagerImpl {
             generated_text,
         })
     }
+
+    // fn generate_completion(&self, prompt: &str) -> Result<Completion, String> {
+    //     // Load the GPT-2 tokenizer and model.
+    //     let tokenizer = Gpt2Tokenizer::from_pretrained("gpt2", None)?;
+    //     let config = Gpt2Config::from_pretrained("gpt2");
+    //     let model = Gpt2ForGeneration::from_pretrained("gpt2", Some(config))?;
+
+    //     // Create a language generator.
+    //     let generate_config = GenerateConfig {
+    //         max_length: 100,
+    //         ..Default::default()
+    //     };
+    //     let language_generator = LanguageGenerator::new(model, tokenizer, generate_config);
+
+    //     // Generate text based on the input prompt.
+    //     let input_context = prompt.to_string();
+    //     let generated_text = language_generator.generate(Some(&[input_context]), None)?;
+
+    //     // Extract the generated text.
+    //     let generated_text = generated_text.first().ok_or("No text generated")?.text.clone();
+
+    //     Ok(Completion {
+    //         prompt: prompt.to_string(),
+    //         generated_text,
+    //     })
+    // }
 
     fn create_training_task(&mut self, task: TrainingTask) -> Result<String, String> {
         if self.training_tasks.contains_key(&task.id) {
