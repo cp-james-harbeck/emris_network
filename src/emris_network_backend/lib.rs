@@ -8,6 +8,7 @@ mod task_manager;
 mod task_manager_impl;
 mod training_task;
 mod user;
+mod fine_tuning;
 
 use completion::*;
 use model_chunk::*;

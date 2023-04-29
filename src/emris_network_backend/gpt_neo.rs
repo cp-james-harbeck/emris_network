@@ -2,13 +2,14 @@ use rust_bert::gpt_neo::{GptNeoConfig, GptNeoForCausalLM, GptNeoGenerator};
 use rust_bert::pipelines::generation::{GenerateConfig, LanguageGenerator};
 use rust_bert::resources::{RemoteResource, Resource};
 use rust_bert::Config;
-use tch::Device;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use tch::Device;
+use tch::nn::VarStore;
 
 pub struct GptNeoTextGenerator {
-    generator: GptNeoGenerator,
+    pub generator: GptNeoGenerator,
 }
 
 impl GptNeoTextGenerator {
@@ -38,4 +39,14 @@ impl GptNeoTextGenerator {
         let output = self.generator.generate(Some(vec![prompt]), Some(generate_config));
         output.get(0).unwrap().to_string()
     }
+
+    // Save the GPT-Neo model to ONNX format
+    pub fn save_model_to_onnx(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
+        let input_shape = &[1, 128];
+        let onnx_bytes = self.generator.model.to_onnx(input_shape, true).unwrap();
+        let mut file = File::create(path)?;
+        file.write_all(&onnx_bytes)?;
+        Ok(())
+    }
 }
+
