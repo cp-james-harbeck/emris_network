@@ -3,6 +3,9 @@ use rust_bert::pipelines::generation::{GenerateConfig, LanguageGenerator};
 use rust_bert::resources::{RemoteResource, Resource};
 use rust_bert::Config;
 use tch::Device;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 
 pub struct GptNeoTextGenerator {
     generator: GptNeoGenerator,
